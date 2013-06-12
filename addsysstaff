@@ -1,0 +1,21 @@
+#! /bin/bash 
+
+SYSSTAFF=$(getent group | grep sysstafftech | sed s/sysstafftech:x:1002://)
+SYSSTAFFTECH="\tvalid users ="
+SYSSTAFF=$(echo $SYSSTAFF | tr ',' ' ')
+
+#Adds domain name before each user
+for i in ${SYSSTAFF}; do
+    SYSSTAFFTECH="$SYSSTAFFTECH domain.name\\\\$i,"
+done
+
+#Get rid of the last comma at the end
+SYSSTAFFTECH="${SYSSTAFFTECH:0:${#SYSSTAFFTECH}-1}"
+#Find "valid users" line in smb.conf
+SMBCONF=$(grep valid /etc/samba/smb.conf) 
+
+#If the smb.conf users don't match our group then find the line then replace
+if [ "$SMBCONF" != "$SYSSTAFFTECH" ]; then
+    echo "valid users and sysstaff don't match, altering smb.conf"
+    sed -i "/valid users/c\ $SYSSTAFFTECH" /etc/samba/smb.conf
+fi
